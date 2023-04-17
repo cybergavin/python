@@ -6,6 +6,7 @@ import requests
 import base64
 import json
 import configparser
+from tabulate import tabulate
 from pathlib import Path, PurePath
 from urllib.parse import urlencode
 
@@ -41,7 +42,7 @@ parser.add_argument("-i", "--trackid", type=str, required=False, help="TRACKID =
 parser.add_argument("-l", "--list", required=False, action='store_true')
 parser.add_argument("-s", "--search", required=False, action='store_true')
 parser.add_argument("-a", "--add", required=False, action='store_true')
-parser.add_argument("-c", "--create", required=False, action='store_true')
+# parser.add_argument("-c", "--create", required=False, action='store_true')
 parser.add_argument("-r", "--recent", type=int, required=False, help="RECENT = The 'number' of recently played tracks to list")
 
 # Parse the input parameters
@@ -50,7 +51,7 @@ args = parser.parse_args()
 # Access the input arguments
 playlist_name = args.playlist
 playlist_list = args.list
-playlist_create = args.create
+# playlist_create = args.create
 track_name = args.track
 track_id = args.trackid
 track_search = args.search
@@ -137,8 +138,8 @@ def list_playlists() -> str:
     except Exception as err:
         raise SystemExit(f'JSON format error\n {err}')    
 
-    for idx, playlist in enumerate(playlist_items):
-        print(f"{idx+1} - {playlist['name']} - {playlist['id']}")
+    indexed_result = [[idx+1] + [playlist['name'], playlist['id']] for idx, playlist in enumerate(playlist_items)]
+    print(tabulate(indexed_result, headers=["#", "Playlist", "Playlist ID"], showindex="never", tablefmt="rounded_outline"))
 
 
 def search_track(song:str) -> str:
@@ -159,9 +160,13 @@ def search_track(song:str) -> str:
     except Exception as err:
         raise SystemExit(f'JSON format error\n {err}')  
 
+    result = []
     for track in track_items:
         for artist in track["artists"]:
-            print(f"{artist['name']} | {track['name']} | {track['uri']}")
+            result.append([artist['name'], track['name'], track['id']])
+    indexed_result = [[idx+1] + row for idx, row in enumerate(result)]
+    print(tabulate(indexed_result, headers=["#", "Artist", "Track", "Track ID"], showindex="never", tablefmt="rounded_outline"))
+
 
 
 def add_track(track_id:str, playlist:str) -> str:
@@ -216,9 +221,8 @@ def list_recent_tracks(num:int) -> str:
     except Exception as err:
         raise SystemExit(f'JSON format error\n {err}')  
 
-    for idx, item in enumerate(items):
-        track = item["track"]
-        print(f"{idx+1}. {track['name']} by {track['artists'][0]['name']}")
+    indexed_result = [[idx+1] + [item['track']['name'], item['track']['artists'][0]['name']] for idx, item in enumerate(items)]
+    print(tabulate(indexed_result, headers=["#", "Track", "Artist"], showindex="never", tablefmt="rounded_outline"))        
 
 if (playlist_list):
     list_playlists()
